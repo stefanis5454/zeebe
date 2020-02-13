@@ -37,6 +37,8 @@ public class UpgradeTest {
   private static final String CURRENT_VERSION = "current-test";
   private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
+  private static final String MSG = "msg";
+
   private static String lastVersion = VersionUtil.getPreviousVersion();
 
   @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
@@ -79,7 +81,7 @@ public class UpgradeTest {
                 .endEvent()
                 .done(),
             (Function<ContainerStateRule, Long>)
-                (ContainerStateRule state) -> {
+                (state) -> {
                   final ActivateJobsResponse jobsResponse =
                       state
                           .client()
@@ -93,9 +95,35 @@ public class UpgradeTest {
                   return jobsResponse.getJobs().get(0).getKey();
                 },
             (BiConsumer<ContainerStateRule, Long>)
-                (ContainerStateRule state, Long key) ->
-                    state.client().newCompleteCommand(key).send().join()
+                (state, key) -> state.client().newCompleteCommand(key).send().join()
           },
+          {
+            "message",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch", b -> b.message(m -> m.name(MSG).zeebeCorrelationKey("key")))
+                .endEvent()
+                .done(),
+            (Function<ContainerStateRule, Long>)
+                (state) -> {
+                  TestUtil.waitUntil(
+                      () -> state.findLogContaining("WORKFLOW_INSTANCE_SUBSCRIPTION", "OPENED"));
+                  return -1L;
+                },
+            (BiConsumer<ContainerStateRule, Long>)
+                (state, key) -> {
+                  state
+                      .client()
+                      .newPublishMessageCommand()
+                      .messageName(MSG)
+                      .correlationKey("123")
+                      .send()
+                      .join();
+
+                  TestUtil.waitUntil(() -> state.findMessageInState(MSG, "PUBLISHED"));
+                }
+          }
         });
   }
 
@@ -115,6 +143,7 @@ public class UpgradeTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
+        .variables("{\"key\": 123}")
         .send()
         .join();
 
@@ -151,6 +180,7 @@ public class UpgradeTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
+        .variables("{\"key\": 123}")
         .send()
         .join();
 

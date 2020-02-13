@@ -11,6 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
+import java.util.Arrays;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -106,16 +107,25 @@ class ContainerStateRule implements TestRule {
     client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
   }
 
-  /**
-   * @return true if a record was found the element with the specified intent. Otherwise, returns
-   *     false
-   */
+  /** @return true if the element was found in the specified intent. Otherwise, returns false */
   boolean findElementInState(final String elementId, final String intent) {
+    return findLogContaining(
+        String.format("\"elementId\":\"%s\"", elementId),
+        String.format("\"intent\":\"%s\"", intent));
+  }
+
+  /** @return true if the message was found in the specified intent. Otherwise, returns false */
+  boolean findMessageInState(final String name, final String intent) {
+    return findLogContaining(
+        String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));
+  }
+
+  boolean findLogContaining(final String... piece) {
     final String[] lines = broker.getLogs().split("\n");
 
     for (int i = lines.length - 1; i >= 0; --i) {
-      if (lines[i].contains(String.format("\"elementId\":\"%s\"", elementId))
-          && lines[i].contains(String.format("\"intent\":\"%s\"", intent))) {
+      final int finalI = i;
+      if (Arrays.stream(piece).allMatch(p -> lines[finalI].contains(p))) {
         return true;
       }
     }
@@ -141,6 +151,7 @@ class ContainerStateRule implements TestRule {
           .stopContainerCmd(broker.getContainerId())
           .withTimeout(CLOSE_TIMEOUT)
           .exec();
+      broker.close();
       broker = null;
     }
 
