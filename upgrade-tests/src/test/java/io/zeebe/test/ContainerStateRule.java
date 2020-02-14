@@ -27,6 +27,7 @@ class ContainerStateRule implements TestRule {
   private ZeebeStandaloneGatewayContainer gateway;
   private ZeebeClient client;
   private Network network;
+  private String lastLog;
 
   public ZeebeClient client() {
     return client;
@@ -40,26 +41,30 @@ class ContainerStateRule implements TestRule {
         try {
           base.evaluate();
         } catch (Throwable t) {
-          if (broker != null && LOG.isErrorEnabled()) {
-            LOG.error(
-                String.format(
-                    "%n===============================================%nBroker logs%n===============================================%n%s",
-                    broker.getLogs().replaceAll("\n\n", "\n")));
+          if (broker != null) {
+            log("Broker", broker.getLogs());
+          } else if (lastLog != null) {
+            log("Broker", lastLog);
           }
 
-          if (gateway != null && LOG.isErrorEnabled()) {
-            LOG.error(
-                String.format(
-                    "%n===============================================%nGateway logs%n===============================================%n%s",
-                    gateway.getLogs().replaceAll("\n\n", "\n")));
+          if (gateway != null) {
+            log("Gateway", gateway.getLogs());
           }
-
           throw t;
         } finally {
           close();
         }
       }
     };
+  }
+
+  private void log(final String type, final String log) {
+    if (LOG.isErrorEnabled()) {
+      LOG.error(
+          String.format(
+              "%n===============================================%n%s logs%n===============================================%n%s",
+              type, log.replaceAll("\n\n", "\n")));
+    }
   }
 
   /**
@@ -141,6 +146,7 @@ class ContainerStateRule implements TestRule {
           .stopContainerCmd(broker.getContainerId())
           .withTimeout(CLOSE_TIMEOUT)
           .exec();
+      lastLog = broker.getLogs();
       broker.close();
       broker = null;
     }
