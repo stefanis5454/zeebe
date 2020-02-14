@@ -21,7 +21,7 @@ import org.testcontainers.containers.Network;
 
 class ContainerStateRule implements TestRule {
 
-  private static final int CLOSE_TIMEOUT = 15;
+  private static final int CLOSE_TIMEOUT = 40;
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
   private ZeebeBrokerContainer broker;
   private ZeebeStandaloneGatewayContainer gateway;
@@ -141,6 +141,7 @@ class ContainerStateRule implements TestRule {
           .stopContainerCmd(broker.getContainerId())
           .withTimeout(CLOSE_TIMEOUT)
           .exec();
+      broker.close();
       broker = null;
     }
 

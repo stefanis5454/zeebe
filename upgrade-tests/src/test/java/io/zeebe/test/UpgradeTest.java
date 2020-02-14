@@ -158,9 +158,10 @@ public class UpgradeTest {
 
     // when
     state.close();
+    final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots");
+    assertThat(snapshot.list()).isNotEmpty();
+
     if (deleteSnapshot) {
-      final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots");
-      assertThat(snapshot.list()).isNotEmpty();
       Files.delete(snapshot);
     }
 
