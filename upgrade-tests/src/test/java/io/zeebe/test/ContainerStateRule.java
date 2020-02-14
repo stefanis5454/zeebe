@@ -11,6 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
+import java.time.Duration;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -21,7 +22,7 @@ import org.testcontainers.containers.Network;
 
 class ContainerStateRule implements TestRule {
 
-  private static final int CLOSE_TIMEOUT = 40;
+  private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(40);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
   private ZeebeBrokerContainer broker;
   private ZeebeStandaloneGatewayContainer gateway;
@@ -39,6 +40,7 @@ class ContainerStateRule implements TestRule {
       @Override
       public void evaluate() throws Throwable {
         try {
+          lastLog = null;
           base.evaluate();
         } catch (Throwable t) {
           if (broker != null) {
@@ -72,7 +74,7 @@ class ContainerStateRule implements TestRule {
    */
   void startBrokerEmbeddedGateway(final String brokerVersion, final String volumePath) {
     network = Network.newNetwork();
-
+    LOG.error(String.format("Version: %s\n", brokerVersion));
     broker =
         new ZeebeBrokerContainer(brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
@@ -141,13 +143,11 @@ class ContainerStateRule implements TestRule {
     }
 
     if (broker != null) {
-      broker
-          .getDockerClient()
-          .stopContainerCmd(broker.getContainerId())
-          .withTimeout(CLOSE_TIMEOUT)
-          .exec();
+      LOG.error("Starting shutdown");
+      broker.shutdownGracefully(CLOSE_TIMEOUT);
+      LOG.error("Finished shutdown");
       lastLog = broker.getLogs();
-      broker.close();
+      //      broker.close();
       broker = null;
     }
 
