@@ -60,14 +60,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemProperties>
-            <property>
-              <name>lastVersion</name>
-              <value>${backwards.compat.version}</value>
-            </property>
-          </systemProperties>
-        </configuration>
       </plugin>
     </plugins>
   </build>

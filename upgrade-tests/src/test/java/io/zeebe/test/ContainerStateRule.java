@@ -12,15 +12,13 @@ import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
 import java.time.Duration;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 
-class ContainerStateRule implements TestRule {
+class ContainerStateRule extends ExternalResource {
 
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(40);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
@@ -35,29 +33,24 @@ class ContainerStateRule implements TestRule {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
-    return new Statement() {
-      @Override
-      public void evaluate() throws Throwable {
-        try {
-          lastLog = null;
-          base.evaluate();
-        } catch (Throwable t) {
-          if (broker != null) {
-            log("Broker", broker.getLogs());
-          } else if (lastLog != null) {
-            log("Broker", lastLog);
-          }
+  public void before() {
+    lastLog = null;
+  }
 
-          if (gateway != null) {
-            log("Gateway", gateway.getLogs());
-          }
-          throw t;
-        } finally {
-          close();
-        }
-      }
-    };
+  @Override
+  public void after() {
+    if (broker != null) {
+      log("Broker", broker.getLogs());
+    }
+    //    else if (lastLog != null) {
+    //      log("Broker", lastLog);
+    //    }
+
+    if (gateway != null) {
+      log("Gateway", gateway.getLogs());
+    }
+
+    close();
   }
 
   private void log(final String type, final String log) {
@@ -74,14 +67,14 @@ class ContainerStateRule implements TestRule {
    */
   void startBrokerEmbeddedGateway(final String brokerVersion, final String volumePath) {
     network = Network.newNetwork();
-    LOG.error(String.format("Version: %s\n", brokerVersion));
+
     broker =
         new ZeebeBrokerContainer(brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
             .withNetwork(network)
             .withEmbeddedGateway(true)
             .withDebug(true)
-            .withLogLevel(Level.DEBUG);
+            .withLogLevel(Level.TRACE);
     broker.start();
 
     final String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
@@ -97,7 +90,7 @@ class ContainerStateRule implements TestRule {
         new ZeebeBrokerContainer(brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
             .withNetwork(network)
-            .withEmbeddedGateway(true)
+            .withEmbeddedGateway(false)
             .withDebug(true)
             .withLogLevel(Level.DEBUG);
     broker.start();
@@ -117,7 +110,7 @@ class ContainerStateRule implements TestRule {
    * @return true if a record was found the element with the specified intent. Otherwise, returns
    *     false
    */
-  boolean findElementInState(final String elementId, final String intent) {
+  boolean hasElementInState(final String elementId, final String intent) {
     final String[] lines = broker.getLogs().split("\n");
 
     for (int i = lines.length - 1; i >= 0; --i) {
@@ -144,9 +137,10 @@ class ContainerStateRule implements TestRule {
 
     if (broker != null) {
       LOG.error("Starting shutdown");
+
       broker.shutdownGracefully(CLOSE_TIMEOUT);
       LOG.error("Finished shutdown");
-      lastLog = broker.getLogs();
+      log("after close broker", broker.getLogs());
       //      broker.close();
       broker = null;
     }

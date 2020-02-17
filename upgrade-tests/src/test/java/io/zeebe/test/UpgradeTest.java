@@ -89,7 +89,7 @@ public class UpgradeTest {
                           .send()
                           .join();
 
-                  TestUtil.waitUntil(() -> state.findElementInState(TASK, "ACTIVATED"));
+                  TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
                   return jobsResponse.getJobs().get(0).getKey();
                 },
             (BiConsumer<ContainerStateRule, Long>)
@@ -100,7 +100,7 @@ public class UpgradeTest {
   }
 
   @Test
-  public void shouldReceiveSbeRecords() {
+  public void oldGatewayWithNewBroker() {
     // given
     state.startBrokerStandaloneGateway(CURRENT_VERSION, tmpFolder.getRoot().getPath(), lastVersion);
 
@@ -123,7 +123,7 @@ public class UpgradeTest {
 
     // then
     afterUpgrade.accept(state, key);
-    TestUtil.waitUntil(() -> state.findElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
+    TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 
   @Test
@@ -169,6 +169,6 @@ public class UpgradeTest {
     state.startBrokerEmbeddedGateway(CURRENT_VERSION, tmpFolder.getRoot().getPath());
     afterUpgrade.accept(state, key);
 
-    TestUtil.waitUntil(() -> state.findElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
+    TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 }
