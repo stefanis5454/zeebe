@@ -8,6 +8,7 @@
 package io.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
@@ -16,6 +17,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -108,16 +114,16 @@ public class UpgradeTest {
   }
 
   @Test
-  public void upgradeWithSnapshot() {
+  public void upgradeWithSnapshot() throws IOException {
     upgradeZeebe(false);
   }
 
   @Test
-  public void upgradeWithoutSnapshot() {
+  public void upgradeWithoutSnapshot() throws IOException {
     upgradeZeebe(true);
   }
 
-  private void upgradeZeebe(final boolean deleteSnapshot) {
+  private void upgradeZeebe(final boolean deleteSnapshot) throws IOException {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
     testCase.createInstance().accept(state.client());
@@ -128,7 +134,21 @@ public class UpgradeTest {
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
     // TODO: remove this
     state.log("", snapshot.getPath());
-    state.log("", snapshot.isDirectory() && snapshot.exists() ? "dir exists" : "doesn't exist");
+
+    java.nio.file.Files.walkFileTree(
+        tmpFolder.getRoot().toPath(),
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
+            return super.visitFile(file, attrs);
+          }
+        });
+
+    assertTrue(snapshot.exists());
+    assertTrue(snapshot.isDirectory());
+
     state.log("", String.join(",", snapshot.list()));
     assertThat(snapshot.list()).isNotEmpty();
 
