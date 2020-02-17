@@ -22,7 +22,7 @@ spec:
           value: |
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
-          value: tcp://localhost:2376
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 8
@@ -43,7 +43,7 @@ spec:
           value: |
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
-          value: tcp://localhost:2376
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 2
@@ -64,12 +64,13 @@ spec:
           memory: 1Gi
       env:
         - name: DOCKER_HOST
-          value: tcp://localhost:2376
+          value: tcp://localhost:2375
     - name: docker
       image: docker:19.03.6-dind
       args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
+      command: dockerd --host=tcp://0.0.0.0:2375
       tty: true
       resources:
         limits:
