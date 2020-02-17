@@ -70,6 +70,7 @@ class ContainerStateRule extends ExternalResource {
             .withNetwork(network)
             .withEmbeddedGateway(gatewayVersion == null)
             .withDebug(true)
+            // TODO: find alternative or remove after debug
             .withEnv("JAVA_OPTS", "-Dlog4j.shutdownHookEnabled=false")
             .withLogLevel(Level.DEBUG);
     broker.start();
@@ -89,7 +90,8 @@ class ContainerStateRule extends ExternalResource {
     client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
   }
 
-  private void log(final String type, final String log) {
+  // TODO: make private
+  void log(final String type, final String log) {
     if (LOG.isErrorEnabled()) {
       LOG.error(
           String.format(
@@ -127,6 +129,7 @@ class ContainerStateRule extends ExternalResource {
       gateway = null;
     }
 
+    // TODO: remove logs
     if (broker != null) {
       LOG.error("Starting shutdown");
 

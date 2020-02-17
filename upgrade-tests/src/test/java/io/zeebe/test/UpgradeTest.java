@@ -46,7 +46,7 @@ public class UpgradeTest {
 
   @Rule
   public RuleChain chain =
-      RuleChain.outerRule(new Timeout(2, TimeUnit.MINUTES)).around(tmpFolder).around(state);
+      RuleChain.outerRule(new Timeout(3, TimeUnit.MINUTES)).around(tmpFolder).around(state);
 
   @Parameter public String name;
 
@@ -125,7 +125,11 @@ public class UpgradeTest {
 
     // when
     state.close();
-    final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots");
+    final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
+    // TODO: remove this
+    state.log("", snapshot.getPath());
+    state.log("", snapshot.isDirectory() && snapshot.exists() ? "dir exists" : "doesn't exist");
+    state.log("", String.join(",", snapshot.list()));
     assertThat(snapshot.list()).isNotEmpty();
 
     if (deleteSnapshot) {
