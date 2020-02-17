@@ -117,7 +117,7 @@ pipeline {
                     }
                 }
 
-/*                stage('IT (Java)') {
+                stage('IT (Java)') {
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -126,7 +126,7 @@ pipeline {
                         }
                     }
                 }
-*/
+
                 stage('Build Docs') {
                     steps {
                         container('maven') {
