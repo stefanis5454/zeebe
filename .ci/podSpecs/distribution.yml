@@ -70,7 +70,9 @@ spec:
       args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
-      command: dockerd --host=tcp://0.0.0.0:2375
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
       tty: true
       resources:
         limits:
