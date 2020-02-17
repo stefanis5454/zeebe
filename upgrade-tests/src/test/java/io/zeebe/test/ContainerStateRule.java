@@ -71,8 +71,7 @@ class ContainerStateRule extends ExternalResource {
             .withEmbeddedGateway(gatewayVersion == null)
             .withDebug(true)
             // TODO: find alternative or remove after debug
-            .withEnv("JAVA_OPTS", "-Dlog4j.shutdownHookEnabled=false")
-            .withLogLevel(Level.DEBUG);
+            .withEnv("JAVA_OPTS", "-Dlog4j.shutdownHookEnabled=false");
     broker.start();
     String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
 
