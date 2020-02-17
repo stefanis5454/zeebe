@@ -9,6 +9,7 @@ package io.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.assertj.core.util.Files;
 import org.junit.Rule;
@@ -46,26 +48,10 @@ public class UpgradeTest {
   public RuleChain chain =
       RuleChain.outerRule(new Timeout(2, TimeUnit.MINUTES)).around(tmpFolder).around(state);
 
-  @Parameter public String testName;
+  @Parameter public String name;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
-
-  /**
-   * Should make zeebe write records and write to state of the feature being tested (e.g., jobs,
-   * messages). The workflow should be left in a waiting state so Zeebe can be restarted and
-   * execution can be continued after. Takes the container rule as input and outputs a long which
-   * can be used after the upgrade to continue the execution.
-   */
-  @Parameter(2)
-  public Function<ContainerStateRule, Long> beforeUpgrade;
-
-  /**
-   * Should continue the instance after the upgrade in a way that will complete the workflow. Takes
-   * the container rule and a long (e.g., a key) as input.
-   */
-  @Parameter(3)
-  public BiConsumer<ContainerStateRule, Long> afterUpgrade;
+  public TestCase testCase;
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
@@ -73,88 +59,69 @@ public class UpgradeTest {
         new Object[][] {
           {
             "job",
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(TASK, t -> t.zeebeTaskType(TASK))
-                .endEvent()
-                .done(),
-            (Function<ContainerStateRule, Long>)
-                (ContainerStateRule state) -> {
-                  final ActivateJobsResponse jobsResponse =
-                      state
-                          .client()
-                          .newActivateJobsCommand()
-                          .jobType(TASK)
-                          .maxJobsToActivate(1)
-                          .send()
-                          .join();
-
-                  TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
-                  return jobsResponse.getJobs().get(0).getKey();
-                },
-            (BiConsumer<ContainerStateRule, Long>)
-                (ContainerStateRule state, Long key) ->
-                    state.client().newCompleteCommand(key).send().join()
+            scenario()
+                .createInstance(jobWorkflow())
+                .beforeUpgrade(activateJob())
+                .afterUpgrade(completeJob())
           },
         });
+  }
+
+  private static BpmnModelInstance jobWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(TASK, t -> t.zeebeTaskType(TASK))
+        .endEvent()
+        .done();
+  }
+
+  private static Function<ContainerStateRule, Long> activateJob() {
+    return (ContainerStateRule state) -> {
+      final ActivateJobsResponse jobsResponse =
+          state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+
+      TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
+      return jobsResponse.getJobs().get(0).getKey();
+    };
+  }
+
+  private static BiConsumer<ContainerStateRule, Long> completeJob() {
+    return (ContainerStateRule state, Long key) ->
+        state.client().newCompleteCommand(key).send().join();
   }
 
   @Test
   public void oldGatewayWithNewBroker() {
     // given
-    state.startBrokerStandaloneGateway(CURRENT_VERSION, tmpFolder.getRoot().getPath(), lastVersion);
-
     state
-        .client()
-        .newDeployCommand()
-        .addWorkflowModel(workflow, PROCESS_ID + ".bpmn")
-        .send()
-        .join();
-    state
-        .client()
-        .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
-        .latestVersion()
-        .send()
-        .join();
+        .broker(CURRENT_VERSION, tmpFolder.getRoot().getPath())
+        .withStandaloneGateway(lastVersion)
+        .start();
+    testCase.createInstance().accept(state.client());
 
     // when
-    final long key = beforeUpgrade.apply(state);
+    final long key = testCase.before().apply(state);
 
     // then
-    afterUpgrade.accept(state, key);
+    testCase.after().accept(state, key);
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 
   @Test
-  public void shouldRestoreFromOldSnapshot() {
+  public void upgradeWithSnapshot() {
     upgradeZeebe(false);
   }
 
   @Test
-  public void shouldReprocessOldRecords() {
+  public void upgradeWithoutSnapshot() {
     upgradeZeebe(true);
   }
 
   private void upgradeZeebe(final boolean deleteSnapshot) {
     // given
-    state.startBrokerEmbeddedGateway(lastVersion, tmpFolder.getRoot().getPath());
-
-    state
-        .client()
-        .newDeployCommand()
-        .addWorkflowModel(workflow, PROCESS_ID + ".bpmn")
-        .send()
-        .join();
-    state
-        .client()
-        .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
-        .latestVersion()
-        .send()
-        .join();
-
-    final Long key = beforeUpgrade.apply(state);
+    state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
+    testCase.createInstance().accept(state.client());
+    final Long key = testCase.before().apply(state);
 
     // when
     state.close();
@@ -166,9 +133,64 @@ public class UpgradeTest {
     }
 
     // then
-    state.startBrokerEmbeddedGateway(CURRENT_VERSION, tmpFolder.getRoot().getPath());
-    afterUpgrade.accept(state, key);
+    state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start();
+    testCase.after().accept(state, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
+  }
+
+  private static TestCase scenario() {
+    return new TestCase();
+  }
+
+  private static class TestCase {
+    private Consumer<ZeebeClient> createInstance;
+    private Function<ContainerStateRule, Long> before;
+    private BiConsumer<ContainerStateRule, Long> after;
+
+    TestCase createInstance(final BpmnModelInstance model) {
+      this.createInstance =
+          client -> {
+            client.newDeployCommand().addWorkflowModel(model, PROCESS_ID + ".bpmn").send().join();
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId(PROCESS_ID)
+                .latestVersion()
+                .send()
+                .join();
+          };
+      return this;
+    }
+
+    /**
+     * Should make zeebe write records and write to state of the feature being tested (e.g., jobs,
+     * messages). The workflow should be left in a waiting state so Zeebe can be restarted and
+     * execution can be continued after. Takes the container rule as input and outputs a long which
+     * can be used after the upgrade to continue the execution.
+     */
+    TestCase beforeUpgrade(Function<ContainerStateRule, Long> func) {
+      this.before = func;
+      return this;
+    }
+    /**
+     * Should continue the instance after the upgrade in a way that will complete the workflow.
+     * Takes the container rule and a long (e.g., a key) as input.
+     */
+    TestCase afterUpgrade(BiConsumer<ContainerStateRule, Long> func) {
+      this.after = func;
+      return this;
+    }
+
+    public Consumer<ZeebeClient> createInstance() {
+      return createInstance;
+    }
+
+    public Function<ContainerStateRule, Long> before() {
+      return before;
+    }
+
+    public BiConsumer<ContainerStateRule, Long> after() {
+      return after;
+    }
   }
 }
