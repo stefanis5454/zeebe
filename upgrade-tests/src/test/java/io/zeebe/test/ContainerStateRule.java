@@ -134,6 +134,11 @@ class ContainerStateRule extends ExternalResource {
 
       broker.shutdownGracefully(CLOSE_TIMEOUT);
       LOG.error("Finished shutdown");
+      try {
+        Thread.sleep(1000*60*5);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
       log("after close broker", broker.getLogs());
       //      broker.close();
       broker = null;

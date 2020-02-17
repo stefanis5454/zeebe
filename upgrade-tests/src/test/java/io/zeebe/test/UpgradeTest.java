@@ -52,7 +52,7 @@ public class UpgradeTest {
 
   @Rule
   public RuleChain chain =
-      RuleChain.outerRule(new Timeout(3, TimeUnit.MINUTES)).around(tmpFolder).around(state);
+      RuleChain.outerRule(new Timeout(10, TimeUnit.MINUTES)).around(tmpFolder).around(state);
 
   @Parameter public String name;
 
