@@ -8,10 +8,8 @@ spec:
     - key: "slaves"
       operator: "Exists"
       effect: "NoSchedule"
-  securityContext:
-    fsGroup: 1000
   volumes:
-  - name: sharedData
+  - name: shared
     emptyDir: {}
   containers:
     - name: maven
@@ -35,6 +33,9 @@ spec:
         requests:
           cpu: 8
           memory: 32Gi
+      volumes:
+        - name: shared
+          mountPath: /tmp/sharedData
     - name: maven-jdk8
       image: maven:3.6.0-jdk-8
       command: ["cat"]
@@ -56,6 +57,9 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
+      volumes:
+        - name: shared
+          mountPath: /tmp/sharedData
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
@@ -70,6 +74,9 @@ spec:
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+      volumes:
+        - name: shared
+          mountPath: /tmp/sharedData
     - name: docker
       image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]
@@ -83,3 +90,6 @@ spec:
         requests:
           cpu: 1
           memory: 1Gi
+      volumes:
+        - name: shared
+          mountPath: /tmp/sharedData
