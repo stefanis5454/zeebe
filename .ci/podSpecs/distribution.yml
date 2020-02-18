@@ -94,5 +94,5 @@ spec:
           cpu: 1
           memory: 1Gi
       volumeMounts:
-        mountPath: /tmp/sharedData
-        name: sharedData
+        - mountPath: /tmp/sharedData
+          name: sharedData
