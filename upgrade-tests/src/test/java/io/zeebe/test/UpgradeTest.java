@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.agrona.IoUtil;
 import org.assertj.core.util.Files;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,12 +44,18 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class UpgradeTest {
 
+  public static final File SHARED_DATA =
+      Paths.get(System.getProperty("java.io.tmpdir"), "sharedData").toFile();
   private static final String CURRENT_VERSION = "current-test";
   private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
   private static String lastVersion = VersionUtil.getPreviousVersion();
 
-  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
+  static {
+    IoUtil.ensureDirectoryExists(SHARED_DATA, "temporary folder for Docker");
+  }
+
+  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder(SHARED_DATA);
   @Rule public ContainerStateRule state = new ContainerStateRule();
 
   @Rule

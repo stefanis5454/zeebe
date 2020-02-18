@@ -8,11 +8,16 @@ spec:
     - key: "slaves"
       operator: "Exists"
       effect: "NoSchedule"
+  volumes:
+    - name: sharedData
+      emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
       command: ["cat"]
       tty: true
+      volumeMounts:
+        - mountPath: /tmp/sharedData
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -34,6 +39,8 @@ spec:
       image: maven:3.6.0-jdk-8
       command: ["cat"]
       tty: true
+      volumeMounts:
+        - mountPath: /tmp/sharedData
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -54,6 +61,8 @@ spec:
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
+      volumeMounts:
+        - mountPath: /tmp/sharedData
       tty: true
       resources:
         limits:
