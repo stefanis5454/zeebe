@@ -9,8 +9,8 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
-    - name: sharedData
-      emptyDir: {}
+  - name: sharedData
+    emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
