@@ -8,17 +8,11 @@ spec:
     - key: "slaves"
       operator: "Exists"
       effect: "NoSchedule"
-  volumes:
-    - name: sharedData
-      emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
       command: ["cat"]
       tty: true
-      volumeMounts:
-        - mountPath: /tmp
-          name: sharedData
       env:
         - name: LIMITS_CPU
           valueFrom:
