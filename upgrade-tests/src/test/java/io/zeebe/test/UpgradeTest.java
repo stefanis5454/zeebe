@@ -135,13 +135,13 @@ public class UpgradeTest {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
     testCase.createInstance().accept(state.client());
-    final Long key = testCase.before().apply(state);
+    // final Long key = testCase.before().apply(state);
 
     // when
     state.close();
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
     // TODO: remove this
-    state.log("", snapshot.getPath());
+    state.log("fsdf", snapshot.getPath());
 
     java.nio.file.Files.walkFileTree(
         tmpFolder.getRoot().toPath(),
