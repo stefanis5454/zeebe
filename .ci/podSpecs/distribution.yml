@@ -17,7 +17,7 @@ spec:
       command: ["cat"]
       tty: true
       volumeMounts:
-        - mountPath: /tmp/sharedData
+        - mountPath: /tmp
           name: sharedData
       env:
         - name: LIMITS_CPU
@@ -72,13 +72,10 @@ spec:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
     - name: docker
-      image: docker:19.03.6-dind
+      image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: ""
       tty: true
       resources:
         limits:
