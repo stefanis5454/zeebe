@@ -9,7 +9,7 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
-  - name: shared
+  - name: shared-data
     emptyDir: {}
   containers:
     - name: maven
@@ -34,7 +34,7 @@ spec:
           cpu: 8
           memory: 32Gi
       volumes:
-        - name: shared
+        - name: shared-data
           mountPath: /tmp/sharedData
     - name: maven-jdk8
       image: maven:3.6.0-jdk-8
@@ -58,7 +58,7 @@ spec:
           cpu: 2
           memory: 4Gi
       volumes:
-        - name: shared
+        - name: shared-data
           mountPath: /tmp/sharedData
     - name: golang
       image: golang:1.13.4
@@ -75,7 +75,7 @@ spec:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
       volumes:
-        - name: shared
+        - name: shared-data
           mountPath: /tmp/sharedData
     - name: docker
       image: docker:18.09.4-dind
@@ -91,5 +91,5 @@ spec:
           cpu: 1
           memory: 1Gi
       volumes:
-        - name: shared
+        - name: shared-data
           mountPath: /tmp/sharedData
