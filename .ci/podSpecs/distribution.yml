@@ -19,7 +19,7 @@ spec:
       volumeMounts:
         - mountPath: /tmp/sharedData
           name: sharedData
-          readOnly: true
+          subPath: data
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -91,3 +91,4 @@ spec:
       volumeMounts:
         - mountPath: /tmp/sharedData
           name: sharedData
+          subPath: other
