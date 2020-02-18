@@ -81,6 +81,3 @@ spec:
         requests:
           cpu: 1
           memory: 1Gi
-      volumeMounts:
-        - name: sharedData
-          mountPath: /tmp/sharedData
