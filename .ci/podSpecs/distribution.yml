@@ -15,13 +15,7 @@ spec:
     - name: maven
       image: maven:3.6.0-jdk-11
       command: ["cat"]
-      securityContext:
-        privileged: true
-        runAsUser: 0
       tty: true
-      volumeMounts:
-        - mountPath: /zeebe
-          name: sharedData
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -87,3 +81,6 @@ spec:
         requests:
           cpu: 1
           memory: 1Gi
+      volumeMounts:
+        - name: sharedData
+          mountPath: /tmp/sharedData
