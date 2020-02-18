@@ -19,6 +19,7 @@ spec:
       volumeMounts:
         - mountPath: /tmp/sharedData
           name: sharedData
+          readOnly: true
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -40,9 +41,6 @@ spec:
       image: maven:3.6.0-jdk-8
       command: ["cat"]
       tty: true
-      volumeMounts:
-        - mountPath: /tmp/sharedData
-          name: sharedData
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -63,9 +61,6 @@ spec:
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
-      volumeMounts:
-        - mountPath: /tmp/sharedData
-          name: sharedData
       tty: true
       resources:
         limits:
