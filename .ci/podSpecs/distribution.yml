@@ -8,6 +8,8 @@ spec:
     - key: "slaves"
       operator: "Exists"
       effect: "NoSchedule"
+  securityContext:
+    fsGroup: 1000
   volumes:
   - name: sharedData
     emptyDir: {}
