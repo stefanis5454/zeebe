@@ -166,7 +166,7 @@ public class UpgradeTest {
 
     // then
     state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start();
-    testCase.after().accept(state, key);
+    // testCase.after().accept(state, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
