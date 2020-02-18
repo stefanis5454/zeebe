@@ -69,9 +69,8 @@ class ContainerStateRule extends ExternalResource {
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
             .withNetwork(network)
             .withEmbeddedGateway(gatewayVersion == null)
-            .withDebug(true)
-            // TODO: find alternative or remove after debug
-            .withEnv("JAVA_OPTS", "-Dlog4j.shutdownHookEnabled=false");
+            .withLogLevel(Level.DEBUG);
+
     broker.start();
     String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
 
@@ -89,8 +88,7 @@ class ContainerStateRule extends ExternalResource {
     client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
   }
 
-  // TODO: make private
-  void log(final String type, final String log) {
+  private void log(final String type, final String log) {
     if (LOG.isErrorEnabled()) {
       LOG.error(
           String.format(
@@ -128,19 +126,8 @@ class ContainerStateRule extends ExternalResource {
       gateway = null;
     }
 
-    // TODO: remove logs
     if (broker != null) {
-      LOG.error("Starting shutdown");
-
       broker.shutdownGracefully(CLOSE_TIMEOUT);
-      LOG.error("Finished shutdown");
-      //      try {
-      //        Thread.sleep(1000 * 60 * 5);
-      //      } catch (InterruptedException e) {
-      //        e.printStackTrace();
-      //      }
-      log("after close broker", broker.getLogs());
-      //      broker.close();
       broker = null;
     }
 

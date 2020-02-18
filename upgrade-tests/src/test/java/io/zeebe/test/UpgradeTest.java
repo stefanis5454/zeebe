@@ -7,9 +7,6 @@
  */
 package io.zeebe.test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.model.bpmn.Bpmn;
@@ -18,11 +15,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -81,29 +74,6 @@ public class UpgradeTest {
         });
   }
 
-  private static BpmnModelInstance jobWorkflow() {
-    return Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .serviceTask(TASK, t -> t.zeebeTaskType(TASK))
-        .endEvent()
-        .done();
-  }
-
-  private static Function<ContainerStateRule, Long> activateJob() {
-    return (ContainerStateRule state) -> {
-      final ActivateJobsResponse jobsResponse =
-          state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
-
-      TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
-      return jobsResponse.getJobs().get(0).getKey();
-    };
-  }
-
-  private static BiConsumer<ContainerStateRule, Long> completeJob() {
-    return (ContainerStateRule state, Long key) ->
-        state.client().newCompleteCommand(key).send().join();
-  }
-
   @Test
   public void oldGatewayWithNewBroker() {
     // given
@@ -140,25 +110,6 @@ public class UpgradeTest {
     // when
     state.close();
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
-    // TODO: remove this
-    state.log("", snapshot.getPath());
-
-    java.nio.file.Files.walkFileTree(
-        tmpFolder.getRoot().toPath(),
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
-            return super.visitFile(file, attrs);
-          }
-        });
-
-    assertTrue(snapshot.exists());
-    assertTrue(snapshot.isDirectory());
-
-    state.log("", String.join(",", snapshot.list()));
-    assertThat(snapshot.list()).isNotEmpty();
 
     if (deleteSnapshot) {
       Files.delete(snapshot);
@@ -169,6 +120,29 @@ public class UpgradeTest {
     testCase.after().accept(state, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
+  }
+
+  private static BpmnModelInstance jobWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(TASK, t -> t.zeebeTaskType(TASK))
+        .endEvent()
+        .done();
+  }
+
+  private static Function<ContainerStateRule, Long> activateJob() {
+    return (ContainerStateRule state) -> {
+      final ActivateJobsResponse jobsResponse =
+          state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+
+      TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
+      return jobsResponse.getJobs().get(0).getKey();
+    };
+  }
+
+  private static BiConsumer<ContainerStateRule, Long> completeJob() {
+    return (ContainerStateRule state, Long key) ->
+        state.client().newCompleteCommand(key).send().join();
   }
 
   private static TestCase scenario() {
