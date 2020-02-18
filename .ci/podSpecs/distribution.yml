@@ -19,7 +19,6 @@ spec:
       volumeMounts:
         - mountPath: /tmp/sharedData
           name: sharedData
-          subPath: data
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -88,7 +87,3 @@ spec:
         requests:
           cpu: 1
           memory: 1Gi
-      volumeMounts:
-        - mountPath: /tmp/sharedData
-          name: sharedData
-          subPath: other
