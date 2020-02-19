@@ -71,67 +71,14 @@ pipeline {
             }
         }
 
-        stage('Test (Go)') {
-            steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/test-go.sh'
-                }
-            }
-
-            post {
-                always {
-                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
-                }
-            }
- 
-        }
-
         stage('Test (Java)') {
             parallel {
-                stage('Analyse (Java)') {
-                      steps {
-                          container('maven') {
-                               configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                    sh '.ci/scripts/distribution/analyse-java.sh'
-                               }
-                          }
-                      }
-                }
-
                 stage('Unit (Java)') {
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                                 sh '.ci/scripts/distribution/test-java.sh'
                             }
-                        }
-                    }
-                }
-                stage('Unit 8 (Java 8)') {
-                    steps {
-                        container('maven-jdk8') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/test-java8.sh'
-                            }
-                        }
-                    }
-                }
-
-                stage('IT (Java)') {
-                    steps {
-                        container('maven') {
-                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh '.ci/scripts/distribution/it-java.sh'
-                            }
-                        }
-                    }
-                }
-
-                stage('Build Docs') {
-                    steps {
-                        container('maven') {
-                            sh '.ci/scripts/docs/prepare.sh'
-                            sh '.ci/scripts/docs/build.sh'
                         }
                     }
                 }
