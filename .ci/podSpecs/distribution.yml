@@ -9,17 +9,13 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
-    - name: sharedData
-      emptyDir: {}
+  - name: shared-data
+    emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
       command: ["cat"]
       tty: true
-      volumeMounts:
-        - mountPath: /tmp/sharedData
-          name: sharedData
-          readOnly: true
       env:
         - name: LIMITS_CPU
           valueFrom:
@@ -37,6 +33,9 @@ spec:
         requests:
           cpu: 8
           memory: 32Gi
+      volumeMounts:
+        - name: shared-data
+          mountPath: /tmp/sharedData
     - name: maven-jdk8
       image: maven:3.6.0-jdk-8
       command: ["cat"]
@@ -58,6 +57,9 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
+      volumeMounts:
+        - name: shared-data
+          mountPath: /tmp/sharedData
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
@@ -72,14 +74,14 @@ spec:
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+      volumeMounts:
+        - name: shared-data
+          mountPath: /tmp/sharedData
     - name: docker
-      image: docker:19.03.6-dind
+      image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: ""
       tty: true
       resources:
         limits:
@@ -89,5 +91,5 @@ spec:
           cpu: 1
           memory: 1Gi
       volumeMounts:
-        - mountPath: /tmp/sharedData
-          name: sharedData
+        - name: shared-data
+          mountPath: /tmp/sharedData

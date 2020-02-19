@@ -7,6 +7,8 @@
  */
 package io.zeebe.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.model.bpmn.Bpmn;
@@ -14,7 +16,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,7 +54,7 @@ public class UpgradeTest {
 
   @Rule
   public RuleChain chain =
-      RuleChain.outerRule(new Timeout(10, TimeUnit.MINUTES)).around(tmpFolder).around(state);
+      RuleChain.outerRule(new Timeout(5, TimeUnit.MINUTES)).around(tmpFolder).around(state);
 
   @Parameter public String name;
 
@@ -92,16 +93,16 @@ public class UpgradeTest {
   }
 
   @Test
-  public void upgradeWithSnapshot() throws IOException {
+  public void upgradeWithSnapshot() {
     upgradeZeebe(false);
   }
 
   @Test
-  public void upgradeWithoutSnapshot() throws IOException {
+  public void upgradeWithoutSnapshot() {
     upgradeZeebe(true);
   }
 
-  private void upgradeZeebe(final boolean deleteSnapshot) throws IOException {
+  private void upgradeZeebe(final boolean deleteSnapshot) {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
     testCase.createInstance().accept(state.client());
@@ -110,7 +111,28 @@ public class UpgradeTest {
     // when
     state.close();
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
+    // <<<<<<< HEAD
+    // =======
+    //    // TODO: remove this
+    //    state.log("fsdf", snapshot.getPath());
+    //
+    //    java.nio.file.Files.walkFileTree(
+    //        tmpFolder.getRoot().toPath(),
+    //        new SimpleFileVisitor<>() {
+    //          @Override
+    //          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+    //              throws IOException {
+    //            System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
+    //            return super.visitFile(file, attrs);
+    //          }
+    //        });
+    //
+    //    assertTrue(snapshot.isDirectory());
+    //
+    //    state.log("", String.join(",", snapshot.list()));
+    //    assertThat(snapshot.list()).isNotEmpty();
 
+    assertThat(snapshot).exists();
     if (deleteSnapshot) {
       Files.delete(snapshot);
     }
