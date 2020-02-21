@@ -9,8 +9,8 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
-  - name: shared-data
-    emptyDir: {}
+    - name: shared-data
+      emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
@@ -78,7 +78,8 @@ spec:
           value: tcp://localhost:2375
       volumeMounts:
         - name: shared-data
-          mountPath: /tmp/sharedData
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: docker
       image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]

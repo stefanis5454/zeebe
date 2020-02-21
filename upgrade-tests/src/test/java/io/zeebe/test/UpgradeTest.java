@@ -98,12 +98,12 @@ public class UpgradeTest {
   }
 
   @Test
-  public void upgradeWithSnapshot() {
+  public void upgradeWithSnapshot() throws IOException {
     upgradeZeebe(false);
   }
 
   @Test
-  public void upgradeWithoutSnapshot() {
+  public void upgradeWithoutSnapshot() throws IOException {
     upgradeZeebe(true);
   }
 
