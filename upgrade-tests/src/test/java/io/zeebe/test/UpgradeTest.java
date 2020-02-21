@@ -16,7 +16,12 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -102,7 +107,7 @@ public class UpgradeTest {
     upgradeZeebe(true);
   }
 
-  private void upgradeZeebe(final boolean deleteSnapshot) {
+  private void upgradeZeebe(final boolean deleteSnapshot) throws IOException {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
     testCase.createInstance().accept(state.client());
@@ -116,16 +121,16 @@ public class UpgradeTest {
     //    // TODO: remove this
     //    state.log("fsdf", snapshot.getPath());
     //
-    //    java.nio.file.Files.walkFileTree(
-    //        tmpFolder.getRoot().toPath(),
-    //        new SimpleFileVisitor<>() {
-    //          @Override
-    //          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-    //              throws IOException {
-    //            System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
-    //            return super.visitFile(file, attrs);
-    //          }
-    //        });
+        java.nio.file.Files.walkFileTree(
+            tmpFolder.getRoot().toPath(),
+            new SimpleFileVisitor<>() {
+              @Override
+              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                  throws IOException {
+                System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
+                return super.visitFile(file, attrs);
+              }
+            });
     //
     //    assertTrue(snapshot.isDirectory());
     //

@@ -35,7 +35,8 @@ spec:
           memory: 32Gi
       volumeMounts:
         - name: shared-data
-          mountPath: /tmp/sharedData
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: maven-jdk8
       image: maven:3.6.0-jdk-8
       command: ["cat"]
@@ -59,7 +60,8 @@ spec:
           memory: 4Gi
       volumeMounts:
         - name: shared-data
-          mountPath: /tmp/sharedData
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
@@ -88,8 +90,9 @@ spec:
           cpu: 8
           memory: 16Gi
         requests:
-          cpu: 1
-          memory: 1Gi
+          cpu: 8
+          memory: 16Gi
       volumeMounts:
         - name: shared-data
-          mountPath: /tmp/sharedData
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
