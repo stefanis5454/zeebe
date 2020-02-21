@@ -43,8 +43,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class UpgradeTest {
 
-  private static final File SHARED_DATA =
-      Paths.get("/home", "shared").toFile();
+  private static final File SHARED_DATA = Paths.get("/home", "shared").toFile();
   private static final String CURRENT_VERSION = "current-test";
   private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
