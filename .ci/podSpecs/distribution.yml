@@ -33,6 +33,8 @@ spec:
         requests:
           cpu: 8
           memory: 32Gi
+      securityContext:
+        privileged: true
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
@@ -58,6 +60,8 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
+      securityContext:
+        privileged: true
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
@@ -76,6 +80,8 @@ spec:
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+      securityContext:
+        privileged: true
       volumeMounts:
         - name: shared-data
           mountPath: /home/shared
