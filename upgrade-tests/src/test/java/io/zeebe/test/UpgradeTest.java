@@ -121,16 +121,16 @@ public class UpgradeTest {
     //    // TODO: remove this
     //    state.log("fsdf", snapshot.getPath());
     //
-        java.nio.file.Files.walkFileTree(
-            tmpFolder.getRoot().toPath(),
-            new SimpleFileVisitor<>() {
-              @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                  throws IOException {
-                System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
-                return super.visitFile(file, attrs);
-              }
-            });
+    java.nio.file.Files.walkFileTree(
+        tmpFolder.getRoot().toPath(),
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+              throws IOException {
+            System.out.println(String.format("File: %s", file.toAbsolutePath().toString()));
+            return super.visitFile(file, attrs);
+          }
+        });
     //
     //    assertTrue(snapshot.isDirectory());
     //
@@ -201,7 +201,7 @@ public class UpgradeTest {
      * execution can be continued after. Takes the container rule as input and outputs a long which
      * can be used after the upgrade to continue the execution.
      */
-    TestCase beforeUpgrade(Function<ContainerStateRule, Long> func) {
+    TestCase beforeUpgrade(final Function<ContainerStateRule, Long> func) {
       this.before = func;
       return this;
     }
@@ -209,7 +209,7 @@ public class UpgradeTest {
      * Should continue the instance after the upgrade in a way that will complete the workflow.
      * Takes the container rule and a long (e.g., a key) as input.
      */
-    TestCase afterUpgrade(BiConsumer<ContainerStateRule, Long> func) {
+    TestCase afterUpgrade(final BiConsumer<ContainerStateRule, Long> func) {
       this.after = func;
       return this;
     }
