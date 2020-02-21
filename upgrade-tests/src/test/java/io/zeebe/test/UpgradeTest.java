@@ -24,6 +24,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -43,13 +44,18 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class UpgradeTest {
 
-  private static final File SHARED_DATA = Paths.get("/home", "shared").toFile();
   private static final String CURRENT_VERSION = "current-test";
   private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
   private static String lastVersion = VersionUtil.getPreviousVersion();
+  private static final File SHARED_DATA;
 
   static {
+    final var sharedDataPath =
+        Optional.ofNullable(System.getenv("ZEEBE_CI_SHARED_DATA"))
+            .map(Paths::get)
+            .orElse(Paths.get(System.getProperty("tmpdir", "/tmp"), "shared"));
+    SHARED_DATA = sharedDataPath.toAbsolutePath().toFile();
     IoUtil.ensureDirectoryExists(SHARED_DATA, "temporary folder for Docker");
   }
 

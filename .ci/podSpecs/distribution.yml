@@ -26,6 +26,8 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       resources:
         limits:
           cpu: 8
@@ -53,6 +55,8 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       resources:
         limits:
           cpu: 2
@@ -80,6 +84,8 @@ spec:
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       securityContext:
         privileged: true
       volumeMounts:
