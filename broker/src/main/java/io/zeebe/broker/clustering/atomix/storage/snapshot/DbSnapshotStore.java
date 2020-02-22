@@ -97,6 +97,9 @@ public final class DbSnapshotStore implements SnapshotStore {
 
   @Override
   public void delete() {
+    LOGGER.info(
+        "Deleting snapshot store at {} (pending: {})", snapshotsDirectory, pendingDirectory);
+
     // currently only called by Atomix when permanently leaving a cluster - it should be safe here
     // to not update the metrics, as they will simply disappear as time moves on. Once we have a
     // single store/replication mechanism, we can consider updating the metrics here

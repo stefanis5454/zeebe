@@ -19,12 +19,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class StateReplication implements SnapshotReplication {
 
-  public static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
+  private static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final String replicationTopic;
@@ -48,7 +49,7 @@ public final class StateReplication implements SnapshotReplication {
     eventService.broadcast(
         replicationTopic,
         snapshot,
-        (s) -> {
+        s -> {
           LOG.trace(
               "Replicate on topic {} snapshot chunk {} for snapshot {}.",
               replicationTopic,
@@ -62,8 +63,17 @@ public final class StateReplication implements SnapshotReplication {
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, threadName));
+    if (executorService != null && !executorService.isTerminated()) {
+      LOG.warn("Unexpected call to StateReplication#consume without closing the state first");
+      try {
+        shutdownExecutor();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        LangUtil.rethrowUnchecked(e);
+      }
+    }
 
+    executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
     subscription =
         eventService
             .subscribe(
@@ -82,6 +92,8 @@ public final class StateReplication implements SnapshotReplication {
                 consumer,
                 executorService)
             .join();
+
+    LOG.debug("{} - Subscribed to state replication topic {}", threadName, replicationTopic);
   }
 
   @Override
@@ -91,6 +103,11 @@ public final class StateReplication implements SnapshotReplication {
       subscription = null;
     }
 
+    shutdownExecutor();
+    LOG.debug("{} - Closed state replication {}", threadName, replicationTopic);
+  }
+
+  private void shutdownExecutor() throws InterruptedException {
     if (executorService != null) {
       executorService.shutdownNow();
       executorService.awaitTermination(10, TimeUnit.SECONDS);

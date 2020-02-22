@@ -220,8 +220,13 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (deletionService, errorOnInstallation) -> {
               if (errorOnInstallation == null) {
-                snapshotController.consumeReplicatedSnapshots();
-                installFuture.complete(null);
+                try {
+                  snapshotController.consumeReplicatedSnapshots();
+                  installFuture.complete(null);
+                } catch (final Exception error) {
+                  LOG.error("Failed to subscribe to snapshot replication", error);
+                  installFuture.completeExceptionally(error);
+                }
               } else {
                 LOG.error("Unexpected error on install deletion service.", errorOnInstallation);
                 installFuture.completeExceptionally(errorOnInstallation);
@@ -254,7 +259,7 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (success, errorOnBaseInstallation) -> {
               if (errorOnBaseInstallation == null) {
-                installProcessingPartition(installFuture);
+                recoverProcessingState(installFuture);
               } else {
                 LOG.error("Unexpected error on base installation.", errorOnBaseInstallation);
                 installFuture.completeExceptionally(errorOnBaseInstallation);
@@ -268,18 +273,6 @@ public final class ZeebePartition extends Actor
     snapshotStorage = createSnapshotStorage();
     snapshotController = createSnapshotController();
 
-    try {
-      snapshotController.recover();
-      zeebeDb = snapshotController.openDb();
-    } catch (final Exception e) {
-      // TODO https://github.com/zeebe-io/zeebe/issues/3499
-      throw new IllegalStateException(
-          String.format(
-              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-              partitionId),
-          e);
-    }
-
     final StatePositionSupplier positionSupplier = new StatePositionSupplier(partitionId, LOG);
     final LogStreamDeletionService deletionService =
         new LogStreamDeletionService(
@@ -287,6 +280,24 @@ public final class ZeebePartition extends Actor
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
+  }
+
+  private void recoverProcessingState(final CompletableActorFuture<Void> installFuture) {
+    try {
+      snapshotController.recover();
+      zeebeDb = snapshotController.openDb();
+    } catch (final Exception e) {
+      // TODO https://github.com/zeebe-io/zeebe/issues/3499
+      installFuture.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
+                  partitionId),
+              e));
+      return;
+    }
+
+    installProcessingPartition(installFuture);
   }
 
   private StateSnapshotController createSnapshotController() {
@@ -303,10 +314,11 @@ public final class ZeebePartition extends Actor
     final var reader =
         new AtomixLogStorageReader(atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
+    final var entrySupplier = new AtomixRecordEntrySupplierImpl(reader);
     return new AtomixSnapshotStorage(
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
-        new AtomixRecordEntrySupplierImpl(reader),
+        entrySupplier,
         brokerCfg.getData().getMaxSnapshots(),
         new SnapshotMetrics(partitionId));
   }
@@ -354,7 +366,7 @@ public final class ZeebePartition extends Actor
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
         .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
         .streamProcessorFactory(
-            (processingContext) -> {
+            processingContext -> {
               final ActorControl actor = processingContext.getActor();
               final ZeebeState zeebeState = processingContext.getZeebeState();
               return typedRecordProcessorsFactory.createTypedStreamProcessor(
