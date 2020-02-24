@@ -36,13 +36,13 @@ public final class BrokerCfg {
 
   public void init(final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
-    network.init(this, brokerBase, environment);
-    cluster.init(this, brokerBase, environment);
-    threads.init(this, brokerBase, environment);
-    data.init(this, brokerBase, environment);
-    exporters.values().forEach(e -> e.init(this, brokerBase, environment));
-    gateway.init(this, brokerBase, environment);
-    backpressure.init(this, brokerBase, environment);
+    network.init(this, brokerBase);
+    cluster.init(this, brokerBase);
+    threads.init(this, brokerBase);
+    data.init(this, brokerBase);
+    exporters.values().forEach(e -> e.init(this, brokerBase));
+    gateway.init(this, brokerBase);
+    backpressure.init(this, brokerBase);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -53,9 +53,6 @@ public final class BrokerCfg {
                 exporters.put(
                     "DebugLogExporter",
                     DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
-    environment
-        .get(EnvironmentConstants.ENV_STEP_TIMEOUT)
-        .ifPresent(value -> setStepTimeout(Duration.parse(value)));
   }
 
   public NetworkCfg getNetwork() {
