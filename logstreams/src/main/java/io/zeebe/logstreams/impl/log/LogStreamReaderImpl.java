@@ -71,8 +71,18 @@ public final class LogStreamReaderImpl implements LogStreamReader {
     }
 
     final long seekAddress = storageReader.lookUpApproximateAddress(position);
+
+    final long startTime = System.currentTimeMillis();
     invalidateBufferAndOffsets();
-    return seekFrom(seekAddress, position);
+    final long endTime = System.currentTimeMillis();
+    Loggers.LOGSTREAMS_LOGGER.info("Invalidate buffer took: {} ms", endTime - startTime);
+
+    final long startSeek = System.currentTimeMillis();
+    final var found = seekFrom(seekAddress, position);
+    final long endSeek = System.currentTimeMillis();
+    Loggers.LOGSTREAMS_LOGGER.info(
+        "Seek from {} to pos {} took: {} ms", seekAddress, position, endSeek - startSeek);
+    return found;
   }
 
   //  private long findAddress(long position) {
