@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
@@ -57,8 +58,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private final String actorName;
 
   private final AtomicInteger openWriterCount = new AtomicInteger(0);
-  private final ConcurrentNavigableMap<Long, Long> positionToIndexMapping =
-      new ConcurrentSkipListMap<>();
+  private final AtomicReference<ConcurrentNavigableMap<Long, Long>> positionToIndexMappingRef =
+      new AtomicReference<>(new ConcurrentSkipListMap<>());
 
   public LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -88,7 +89,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
     this.commitPosition = INVALID_ADDRESS;
     this.readers = new ArrayList<>();
-    this.reader = new LogStreamReaderImpl(positionToIndexMapping, logStorage);
+    this.reader = new LogStreamReaderImpl(getPositionToIndexMapping(), logStorage);
     this.readers.add(reader);
 
     internalSetCommitPosition(reader.seekToEnd());
@@ -189,6 +190,17 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
           logStorage.delete(blockAddress);
           final long endDelete = System.currentTimeMillis();
           LOG.info("Deletion up to {} took {} ms", blockAddress, endDelete - startDelete);
+
+          final var positionToIndexMapping = getPositionToIndexMapping();
+          if (!positionToIndexMapping.isEmpty()) {
+            final var newPositionToIndexMap =
+                positionToIndexMapping.subMap(
+                    positionToIndexMapping.higherKey(position),
+                    true,
+                    positionToIndexMapping.lastKey(),
+                    true);
+            positionToIndexMappingRef.set(newPositionToIndexMap);
+          }
         });
   }
 
@@ -207,7 +219,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
     return actor.call(
         () -> {
           final LogStreamReaderImpl reader =
-              new LogStreamReaderImpl(positionToIndexMapping, logStorage);
+              new LogStreamReaderImpl(getPositionToIndexMapping(), logStorage);
           readers.add(reader);
           return reader;
         });
@@ -333,7 +345,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
                         logStorage,
                         subscription,
                         maxFrameLength,
-                        positionToIndexMapping);
+                        getPositionToIndexMapping());
 
                 actorScheduler
                     .submitActor(appender)
@@ -355,7 +367,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   private int determineInitialPartitionId() {
     try (final LogStreamReaderImpl logReader =
-        new LogStreamReaderImpl(positionToIndexMapping, logStorage)) {
+        new LogStreamReaderImpl(getPositionToIndexMapping(), logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();
@@ -369,6 +381,10 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
       return partitionId;
     }
+  }
+
+  private ConcurrentNavigableMap<Long, Long> getPositionToIndexMapping() {
+    return positionToIndexMappingRef.get();
   }
 
   @FunctionalInterface
