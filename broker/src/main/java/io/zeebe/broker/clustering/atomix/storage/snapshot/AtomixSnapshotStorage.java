@@ -56,7 +56,12 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
 
   @Override
   public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
+
+    final long startTime = System.currentTimeMillis();
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+    final long endTime = System.currentTimeMillis();
+    LOGGER.info("Finding entry for position {} took {} ms", snapshotPosition, endTime - startTime);
+
     if (optionalIndexed.isPresent()) {
       final var indexed = optionalIndexed.get();
       final var pending =
@@ -165,7 +170,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
           "Max snapshot count reached ({}), purging snapshots older than {}",
           snapshots.size(),
           oldest);
-      store.purgeSnapshots(oldest);
+      //      store.purgeSnapshots(oldest);
 
       final var optionalConverted = toSnapshot(oldest.getPath());
       if (optionalConverted.isPresent()) {
