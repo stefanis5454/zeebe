@@ -10,7 +10,6 @@ package io.zeebe.logstreams.storage.atomix;
 import io.atomix.protocols.raft.storage.log.RaftLogReader;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
-import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.Optional;
@@ -121,7 +120,6 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return low;
     }
 
-    final long startTime = System.currentTimeMillis();
     var index = positionToIndexMapping.getOrDefault(position, -1L);
 
     if (index == -1) {
@@ -138,11 +136,45 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       result = index;
     }
 
-    final long endTime = System.currentTimeMillis();
-    Loggers.LOGSTREAMS_LOGGER.info(
-        "Finding position {} in map took: {} ms ", position, endTime - startTime);
+    //    final var lookUpResult = binarySearch(position, low, high);
+    //    assert result == lookUpResult
+    //        : "Result is not equal! Result: "
+    //            + result
+    //            + " look up: "
+    //            + lookUpResult
+    //            + " for position "
+    //            + position;
 
     return result;
+  }
+
+  private long binarySearch(long position, long low, long high) {
+    // binary search over index range, assuming we have no missing indexes
+    boolean atLeastOneZeebeEntry = false;
+    while (low <= high) {
+      final var pivotIndex = (low + high) >>> 1;
+      final var pivotEntry = findEntry(pivotIndex);
+
+      if (pivotEntry.isPresent()) {
+        final Indexed<ZeebeEntry> entry = pivotEntry.get();
+        // using the entry index to reset high/low can lead to infinite loops as `findEntry`
+        // actually seeks to the next entry
+        if (position < entry.entry().lowestPosition()) {
+          high = pivotIndex - 1;
+        } else if (position > entry.entry().highestPosition()) {
+          low = pivotIndex + 1;
+        } else {
+          return entry.index();
+        }
+        atLeastOneZeebeEntry = true;
+      } else {
+        high = pivotIndex - 1;
+      }
+    }
+
+    return atLeastOneZeebeEntry
+        ? Math.max(high, reader.getFirstIndex())
+        : LogStorage.OP_RESULT_NO_DATA;
   }
 
   @Override
