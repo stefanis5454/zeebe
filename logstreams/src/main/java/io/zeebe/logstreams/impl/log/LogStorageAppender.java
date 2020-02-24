@@ -44,21 +44,18 @@ public final class LogStorageAppender extends Actor {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
-  private final Map<Long, Long> positionAddressMapping;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize,
-      final Map<Long, Long> positionAddressMapping) {
+      final int maxBlockSize) {
     this.env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
-    this.positionAddressMapping = positionAddressMapping;
 
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
@@ -183,7 +180,6 @@ public final class LogStorageAppender extends Actor {
 
     @Override
     public void onCommit(final long address) {
-      positionAddressMapping.put(positions.lowest, address);
       releaseBackPressure();
     }
 

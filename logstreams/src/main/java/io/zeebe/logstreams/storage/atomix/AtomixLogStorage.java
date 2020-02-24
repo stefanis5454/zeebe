@@ -12,7 +12,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentNavigableMap;
 
 public class AtomixLogStorage implements LogStorage {
   private final AtomixReaderFactory readerFactory;
@@ -37,12 +36,7 @@ public class AtomixLogStorage implements LogStorage {
 
   @Override
   public LogStorageReader newReader() {
-    return new OldAtomixLogStorageReader(readerFactory.create());
-  }
-
-  @Override
-  public LogStorageReader newReader(ConcurrentNavigableMap<Long, Long> positionMapping) {
-    return new AtomixLogStorageReader(positionMapping, readerFactory.create());
+    return new AtomixLogStorageReader(readerFactory.create());
   }
 
   @Override

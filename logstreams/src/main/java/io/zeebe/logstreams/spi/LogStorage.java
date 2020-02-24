@@ -9,7 +9,6 @@ package io.zeebe.logstreams.spi;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentNavigableMap;
 
 /** Log structured storage abstraction */
 public interface LogStorage {
@@ -42,8 +41,6 @@ public interface LogStorage {
    *
    * @return a new stateful storage reader
    */
-  LogStorageReader newReader(ConcurrentNavigableMap<Long, Long> positionMapping);
-
   LogStorageReader newReader();
 
   /**

@@ -13,17 +13,13 @@ import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentNavigableMap;
 import org.agrona.DirectBuffer;
 
 public final class AtomixLogStorageReader implements LogStorageReader {
   private final RaftLogReader reader;
-  private final ConcurrentNavigableMap<Long, Long> positionToIndexMapping;
 
-  public AtomixLogStorageReader(
-      ConcurrentNavigableMap<Long, Long> positionToIndexMapping, final RaftLogReader reader) {
+  public AtomixLogStorageReader(final RaftLogReader reader) {
     this.reader = reader;
-    this.positionToIndexMapping = positionToIndexMapping;
   }
 
   @Override
@@ -102,8 +98,8 @@ public final class AtomixLogStorageReader implements LogStorageReader {
    */
   @Override
   public long lookUpApproximateAddress(final long position) {
-    final var low = reader.getFirstIndex();
-    final var high = reader.getLastIndex();
+    var low = reader.getFirstIndex();
+    var high = reader.getLastIndex();
 
     if (position == Long.MIN_VALUE) {
       final var optionalEntry = findEntry(reader.getFirstIndex());
@@ -120,35 +116,6 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return low;
     }
 
-    var index = positionToIndexMapping.getOrDefault(position, -1L);
-
-    if (index == -1) {
-      final var lowerEntry = positionToIndexMapping.lowerEntry(position);
-      if (lowerEntry != null) {
-        index = lowerEntry.getValue();
-      }
-    }
-
-    final long result;
-    if (index == -1) {
-      result = low;
-    } else {
-      result = index;
-    }
-
-    //    final var lookUpResult = binarySearch(position, low, high);
-    //    assert result == lookUpResult
-    //        : "Result is not equal! Result: "
-    //            + result
-    //            + " look up: "
-    //            + lookUpResult
-    //            + " for position "
-    //            + position;
-
-    return result;
-  }
-
-  private long binarySearch(long position, long low, long high) {
     // binary search over index range, assuming we have no missing indexes
     boolean atLeastOneZeebeEntry = false;
     while (low <= high) {

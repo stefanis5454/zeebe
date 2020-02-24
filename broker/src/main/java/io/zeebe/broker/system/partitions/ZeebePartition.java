@@ -44,7 +44,7 @@ import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.OldAtomixLogStorageReader;
+import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
@@ -301,7 +301,7 @@ public final class ZeebePartition extends Actor
 
   private SnapshotStorage createSnapshotStorage() {
     final var reader =
-        new OldAtomixLogStorageReader(atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
+        new AtomixLogStorageReader(atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
     return new AtomixSnapshotStorage(
         runtimeDirectory,

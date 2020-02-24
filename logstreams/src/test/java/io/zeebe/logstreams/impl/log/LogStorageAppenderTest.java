@@ -27,7 +27,6 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
@@ -69,18 +68,11 @@ public final class LogStorageAppenderTest {
             .initialPartitionId(0)
             .build();
     final var subscription = dispatcher.openSubscription("log");
-
-    final var positionToAddressMap = new ConcurrentSkipListMap<Long, Long>();
     appender =
         new LogStorageAppender(
-            "appender",
-            PARTITION_ID,
-            logStorage,
-            subscription,
-            MAX_FRAGMENT_SIZE,
-            positionToAddressMap);
+            "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher, () -> {});
-    reader = new LogStreamReaderImpl(positionToAddressMap, logStorage);
+    reader = new LogStreamReaderImpl(logStorage);
   }
 
   @After
