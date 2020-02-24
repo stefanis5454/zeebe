@@ -8,6 +8,7 @@
 package io.zeebe.logstreams.storage.atomix;
 
 import io.atomix.protocols.raft.partition.RaftPartition;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
@@ -61,7 +62,16 @@ public class AtomixLogStorage implements LogStorage {
 
   @Override
   public void delete(final long index) {
-    logCompacter.compact(index);
+
+    final long startTime = System.currentTimeMillis();
+    logCompacter
+        .compact(index)
+        .whenComplete(
+            (v, t) -> {
+              final long endtime = System.currentTimeMillis();
+              Loggers.LOGSTREAMS_LOGGER.info(
+                  "Compaction for index {} took {} ms", index, endtime - startTime);
+            });
   }
 
   @Override

@@ -67,7 +67,11 @@ public final class LogStreamReaderImpl implements LogStreamReader {
       throw new IllegalStateException(ERROR_CLOSED);
     }
 
+    final long startlookUpTime = System.currentTimeMillis();
     final long seekAddress = storageReader.lookUpApproximateAddress(position);
+    final long endlookUpTime = System.currentTimeMillis();
+    Loggers.LOGSTREAMS_LOGGER.info(
+        "Lookup for pos {} took: {} ms", position, endlookUpTime - startlookUpTime);
 
     final long startTime = System.currentTimeMillis();
     invalidateBufferAndOffsets();
