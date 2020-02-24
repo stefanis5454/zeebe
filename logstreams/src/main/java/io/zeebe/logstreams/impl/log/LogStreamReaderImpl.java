@@ -13,6 +13,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.function.LongUnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -38,8 +39,10 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   private long lastReadAddress;
   private int bufferOffset;
 
-  public LogStreamReaderImpl(final LogStorage logStorage) {
-    this.storageReader = logStorage.newReader();
+  public LogStreamReaderImpl(
+      final ConcurrentNavigableMap<Long, Long> positionToIndexMapping,
+      final LogStorage logStorage) {
+    this.storageReader = logStorage.newReader(positionToIndexMapping);
     invalidateBufferAndOffsets();
     seek(FIRST_POSITION);
   }
@@ -71,6 +74,39 @@ public final class LogStreamReaderImpl implements LogStreamReader {
     invalidateBufferAndOffsets();
     return seekFrom(seekAddress, position);
   }
+
+  //  private long findAddress(long position) {
+  //    //    storageReader.lookUpApproximateAddress()
+  //    //    if (position < 0) {
+  //    //      return position;
+  //    //    }
+  //
+  //    var index = positionToIndexMapping.getOrDefault(position, -1L);
+  //
+  //    if (index == -1) {
+  //      final var lowerEntry = positionToIndexMapping.lowerEntry(position);
+  //      if (lowerEntry != null) {
+  //        index = lowerEntry.getValue();
+  //      }
+  //    }
+  //
+  //    long result;
+  //    if (index == -1) {
+  //      result = LogStorage.OP_RESULT_NO_DATA;
+  //    }
+  //    result = index;
+  //
+  //    final var lookUpResult = storageReader.lookUpApproximateAddress(position);
+  //    assert result == lookUpResult
+  //        : "Result is not equal! Result: "
+  //            + result
+  //            + " look up: "
+  //            + lookUpResult
+  //            + " for position "
+  //            + position;
+
+  //    return result;
+  //  }
 
   @Override
   public void seekToFirstEvent() {

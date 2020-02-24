@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -55,6 +57,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private final String actorName;
 
   private final AtomicInteger openWriterCount = new AtomicInteger(0);
+  private final ConcurrentNavigableMap<Long, Long> positionToIndexMapping =
+      new ConcurrentSkipListMap<>();
 
   public LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -84,7 +88,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
     this.commitPosition = INVALID_ADDRESS;
     this.readers = new ArrayList<>();
-    this.reader = new LogStreamReaderImpl(logStorage);
+    this.reader = new LogStreamReaderImpl(positionToIndexMapping, logStorage);
     this.readers.add(reader);
 
     internalSetCommitPosition(reader.seekToEnd());
@@ -196,7 +200,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(
         () -> {
-          final LogStreamReaderImpl reader = new LogStreamReaderImpl(logStorage);
+          final LogStreamReaderImpl reader =
+              new LogStreamReaderImpl(positionToIndexMapping, logStorage);
           readers.add(reader);
           return reader;
         });
@@ -321,7 +326,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
                         partitionId,
                         logStorage,
                         subscription,
-                        maxFrameLength);
+                        maxFrameLength,
+                        positionToIndexMapping);
 
                 actorScheduler
                     .submitActor(appender)
@@ -342,7 +348,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   }
 
   private int determineInitialPartitionId() {
-    try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
+    try (final LogStreamReaderImpl logReader =
+        new LogStreamReaderImpl(positionToIndexMapping, logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();

@@ -100,11 +100,10 @@ public final class AtomixLogStorageRule extends ExternalResource
     listener.onWrite(entry);
     raftLog.writer().commit(entry.index());
 
+    listener.onCommit(entry);
     if (positionListener != null) {
       positionListener.accept(findGreatestPosition(entry));
     }
-
-    listener.onCommit(entry);
   }
 
   @Override
