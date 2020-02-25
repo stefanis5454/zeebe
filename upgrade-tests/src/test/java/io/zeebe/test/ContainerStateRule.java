@@ -13,13 +13,14 @@ import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
 import java.time.Duration;
 import java.util.Arrays;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 
-class ContainerStateRule extends ExternalResource {
+class ContainerStateRule extends TestWatcher {
 
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
@@ -37,7 +38,8 @@ class ContainerStateRule extends ExternalResource {
   }
 
   @Override
-  public void after() {
+  protected void failed(Throwable e, Description description) {
+    super.failed(e, description);
     if (broker != null) {
       log("Broker", broker.getLogs());
     }
@@ -45,7 +47,10 @@ class ContainerStateRule extends ExternalResource {
     if (gateway != null) {
       log("Gateway", gateway.getLogs());
     }
+  }
 
+  @Override
+  protected void finished(Description description) {
     close();
   }
 
@@ -100,19 +105,19 @@ class ContainerStateRule extends ExternalResource {
    *     false
    */
   public boolean hasElementInState(final String elementId, final String intent) {
-    return findLogContaining(
+    return hasLogContaining(
         String.format("\"elementId\":\"%s\"", elementId),
         String.format("\"intent\":\"%s\"", intent));
   }
 
   /** @return true if the message was found in the specified intent. Otherwise, returns false */
   public boolean hasMessageInState(final String name, final String intent) {
-    return findLogContaining(
+    return hasLogContaining(
         String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));
   }
 
   // returns true if it finds a line that contains every piece.
-  boolean findLogContaining(final String... piece) {
+  boolean hasLogContaining(final String... piece) {
     final String[] lines = broker.getLogs().split("\n");
 
     for (int i = lines.length - 1; i >= 0; --i) {
