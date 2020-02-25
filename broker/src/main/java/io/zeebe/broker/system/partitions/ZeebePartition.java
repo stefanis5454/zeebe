@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.RaftRoleChangeListener;
 import io.atomix.protocols.raft.RaftServer.Role;
@@ -70,7 +69,7 @@ public final class ZeebePartition extends Actor
   private static final int EXPORTER_PROCESSOR_ID = 1003;
   private static final String EXPORTER_NAME = "Exporter-%d";
 
-  private final ClusterEventService clusterEventService;
+  private final RaftMessagingService messagingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition atomixRaftPartition;
   private final ExporterRepository exporterRepository = new ExporterRepository();
@@ -99,14 +98,14 @@ public final class ZeebePartition extends Actor
       final BrokerInfo localBroker,
       final RaftPartition atomixRaftPartition,
       final List<PartitionListener> partitionListeners,
-      final ClusterEventService clusterEventService,
+      final RaftMessagingService messagingService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory) {
     this.localBroker = localBroker;
     this.atomixRaftPartition = atomixRaftPartition;
-    this.clusterEventService = clusterEventService;
+    this.messagingService = messagingService;
     this.brokerCfg = brokerCfg;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
@@ -304,7 +303,7 @@ public final class ZeebePartition extends Actor
   private StateSnapshotController createSnapshotController() {
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId, localBroker.getNodeId())
+            ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
@@ -589,10 +588,12 @@ public final class ZeebePartition extends Actor
     super.close();
   }
 
+  @Override
   public void onFailure() {
     actor.run(() -> updateHealthStatus(HealthStatus.UNHEALTHY));
   }
 
+  @Override
   public void onRecovered() {
     actor.run(() -> updateHealthStatus(HealthStatus.HEALTHY));
   }
