@@ -10,21 +10,18 @@ package io.zeebe.logstreams.storage.atomix;
 import io.atomix.protocols.raft.storage.log.RaftLogReader;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
-import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentNavigableMap;
 import org.agrona.DirectBuffer;
 
 public final class AtomixLogStorageReader implements LogStorageReader {
   private final RaftLogReader reader;
-  private final ConcurrentNavigableMap<Long, Long> positionToIndexMapping;
+  private final ZeebeIndexMapping zeebeIndexMapping;
 
-  public AtomixLogStorageReader(
-      ConcurrentNavigableMap<Long, Long> positionToIndexMapping, final RaftLogReader reader) {
+  public AtomixLogStorageReader(final ZeebeIndexMapping zeebeIndexMapping, final RaftLogReader reader) {
     this.reader = reader;
-    this.positionToIndexMapping = positionToIndexMapping;
+    this.zeebeIndexMapping = zeebeIndexMapping;
   }
 
   @Override
@@ -121,26 +118,13 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return low;
     }
 
-    final long startTime = System.currentTimeMillis();
-    var index = positionToIndexMapping.getOrDefault(position, -1L);
-
-    if (index == -1) {
-      final var lowerEntry = positionToIndexMapping.lowerEntry(position);
-      if (lowerEntry != null) {
-        index = lowerEntry.getValue();
-      }
-    }
-
+    final var index = zeebeIndexMapping.lookupPosition(position);
     final long result;
     if (index == -1) {
       result = low;
     } else {
       result = index;
     }
-
-    final long endTime = System.currentTimeMillis();
-    Loggers.LOGSTREAMS_LOGGER.info(
-        "Finding position {} in map took: {} ms ", position, endTime - startTime);
 
     return result;
   }

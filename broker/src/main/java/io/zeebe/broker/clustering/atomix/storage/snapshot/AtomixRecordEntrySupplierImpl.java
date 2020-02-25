@@ -10,13 +10,13 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
-import io.zeebe.logstreams.storage.atomix.OldAtomixLogStorageReader;
+import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import java.util.Optional;
 
 public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
-  private final OldAtomixLogStorageReader reader;
+  private final AtomixLogStorageReader reader;
 
-  public AtomixRecordEntrySupplierImpl(final OldAtomixLogStorageReader reader) {
+  public AtomixRecordEntrySupplierImpl(final AtomixLogStorageReader reader) {
     this.reader = reader;
   }
 

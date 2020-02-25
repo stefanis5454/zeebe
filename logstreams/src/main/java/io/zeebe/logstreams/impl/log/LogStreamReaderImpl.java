@@ -13,7 +13,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.function.LongUnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,9 +39,8 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   private int bufferOffset;
 
   public LogStreamReaderImpl(
-      final ConcurrentNavigableMap<Long, Long> positionToIndexMapping,
       final LogStorage logStorage) {
-    this.storageReader = logStorage.newReader(positionToIndexMapping);
+    this.storageReader = logStorage.newReader();
     invalidateBufferAndOffsets();
     seek(FIRST_POSITION);
   }

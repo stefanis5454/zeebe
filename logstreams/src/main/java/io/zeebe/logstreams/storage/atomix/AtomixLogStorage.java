@@ -12,7 +12,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentNavigableMap;
 
 public class AtomixLogStorage implements LogStorage {
   private final AtomixReaderFactory readerFactory;
@@ -20,29 +19,27 @@ public class AtomixLogStorage implements LogStorage {
   private final AtomixAppenderSupplier appenderSupplier;
 
   private boolean opened;
+  private final ZeebeIndexMapping zeebeIndexMapping;
 
   public AtomixLogStorage(
+      final ZeebeIndexMapping zeebeIndexMapping,
       final AtomixReaderFactory readerFactory,
       final AtomixLogCompactor logCompacter,
       final AtomixAppenderSupplier appenderSupplier) {
+    this.zeebeIndexMapping = zeebeIndexMapping;
     this.readerFactory = readerFactory;
     this.logCompacter = logCompacter;
     this.appenderSupplier = appenderSupplier;
   }
 
-  public static AtomixLogStorage ofPartition(final RaftPartition partition) {
+  public static AtomixLogStorage ofPartition(final ZeebeIndexMapping zeebeIndexMapping, final RaftPartition partition) {
     final var server = new AtomixRaftServer(partition.getServer());
-    return new AtomixLogStorage(server, server, server);
+    return new AtomixLogStorage(zeebeIndexMapping, server, server, server);
   }
 
   @Override
   public LogStorageReader newReader() {
-    return new OldAtomixLogStorageReader(readerFactory.create());
-  }
-
-  @Override
-  public LogStorageReader newReader(ConcurrentNavigableMap<Long, Long> positionMapping) {
-    return new AtomixLogStorageReader(positionMapping, readerFactory.create());
+    return new AtomixLogStorageReader(zeebeIndexMapping, readerFactory.create());
   }
 
   @Override

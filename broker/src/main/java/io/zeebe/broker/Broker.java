@@ -45,6 +45,7 @@ import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.storage.atomix.ZeebeIndexBridge;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
@@ -57,7 +58,9 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -87,6 +90,7 @@ public final class Broker implements AutoCloseable {
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private ServerTransport serverTransport;
+  private Map<Integer, ZeebeIndexBridge> partitionIndexes;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -186,8 +190,24 @@ public final class Broker implements AutoCloseable {
         scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
+
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
+
+    final var partitionGroup =
+    (RaftPartitionGroup)
+        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+
+    partitionIndexes = new HashMap<Integer, ZeebeIndexBridge>();
+
+    partitionGroup.getPartitions().stream()
+        .map(RaftPartition.class::cast)
+        .forEach(raftPartition -> {
+          final var zeebeIndex = new ZeebeIndexBridge();
+          partitionIndexes.put(raftPartition.id().id(), zeebeIndex);
+          raftPartition.setJournalIndexFactory(() -> zeebeIndex);
+        });
+
     return () ->
         atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
@@ -296,8 +316,9 @@ public final class Broker implements AutoCloseable {
     final StartProcess partitionStartProcess = new StartProcess("Broker-" + nodeId + " partitions");
 
     for (final RaftPartition owningPartition : owningPartitions) {
+      final var partitionId = owningPartition.id().id();
       partitionStartProcess.addStep(
-          "partition " + owningPartition.id().id(),
+          "partition " + partitionId,
           () -> {
             final ZeebePartition zeebePartition =
                 new ZeebePartition(
@@ -308,6 +329,7 @@ public final class Broker implements AutoCloseable {
                     scheduler,
                     brokerCfg,
                     commandHandler,
+                    partitionIndexes.get(partitionId),
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
             scheduleActor(zeebePartition);
             return zeebePartition;
