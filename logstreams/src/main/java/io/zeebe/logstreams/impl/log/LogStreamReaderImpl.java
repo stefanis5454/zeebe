@@ -40,8 +40,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   private long lastReadAddress;
   private int bufferOffset;
 
-  public LogStreamReaderImpl(
-      final LogStorage logStorage) {
+  public LogStreamReaderImpl(final LogStorage logStorage) {
     this.storageReader = logStorage.newReader();
     invalidateBufferAndOffsets();
     seek(FIRST_POSITION);

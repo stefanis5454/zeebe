@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
+ */
 package io.zeebe.logstreams.storage.atomix;
 
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
@@ -10,7 +17,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
-  private final ConcurrentNavigableMap<Long, Long> positionIndexMapping = new ConcurrentSkipListMap<>();
+  private final ConcurrentNavigableMap<Long, Long> positionIndexMapping =
+      new ConcurrentSkipListMap<>();
   // atomix positions
   private final ConcurrentNavigableMap<Long, Integer> positions = new ConcurrentSkipListMap<>();
   private final int density = 1000;
@@ -18,8 +26,7 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
   @Override
   public void index(final Indexed indexedEntry, final int position) {
     final var index = indexedEntry.index();
-    if (indexedEntry.type() == ZeebeEntry.class)
-    {
+    if (indexedEntry.type() == ZeebeEntry.class) {
       final ZeebeEntry zeebeEntry = (ZeebeEntry) indexedEntry.entry();
       positionIndexMapping.put(zeebeEntry.lowestPosition(), index);
     }
@@ -57,21 +64,20 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
   @Override
   public void truncate(final long index) {
-// clean up map
-//
-//      final var positionToIndexMapping = getPositionToIndexMapping();
-//      if (!positionToIndexMapping.isEmpty()) {
-//        final var newPositionToIndexMap =
-//            positionToIndexMapping.subMap(
-//                positionToIndexMapping.higherKey(position),
-//                true,
-//                positionToIndexMapping.lastKey(),
-//                true);
-//        positionToIndexMappingRef.set(newPositionToIndexMap);
-//      }
+    // clean up map
+    //
+    //      final var positionToIndexMapping = getPositionToIndexMapping();
+    //      if (!positionToIndexMapping.isEmpty()) {
+    //        final var newPositionToIndexMap =
+    //            positionToIndexMapping.subMap(
+    //                positionToIndexMapping.higherKey(position),
+    //                true,
+    //                positionToIndexMapping.lastKey(),
+    //                true);
+    //        positionToIndexMappingRef.set(newPositionToIndexMap);
+    //      }
 
-
-//    sparseJournalIndex.truncate(index);
+    //    sparseJournalIndex.truncate(index);
     //    positions.tailMap(index, false).clear();
   }
 }

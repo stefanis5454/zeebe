@@ -190,23 +190,23 @@ public final class Broker implements AutoCloseable {
         scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
 
     final var partitionGroup =
-    (RaftPartitionGroup)
-        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+        (RaftPartitionGroup)
+            atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
 
     partitionIndexes = new HashMap<Integer, ZeebeIndexBridge>();
 
     partitionGroup.getPartitions().stream()
         .map(RaftPartition.class::cast)
-        .forEach(raftPartition -> {
-          final var zeebeIndex = new ZeebeIndexBridge();
-          partitionIndexes.put(raftPartition.id().id(), zeebeIndex);
-          raftPartition.setJournalIndexFactory(() -> zeebeIndex);
-        });
+        .forEach(
+            raftPartition -> {
+              final var zeebeIndex = new ZeebeIndexBridge();
+              partitionIndexes.put(raftPartition.id().id(), zeebeIndex);
+              raftPartition.setJournalIndexFactory(() -> zeebeIndex);
+            });
 
     return () ->
         atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);

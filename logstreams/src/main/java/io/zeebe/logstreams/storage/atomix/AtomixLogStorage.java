@@ -32,7 +32,8 @@ public class AtomixLogStorage implements LogStorage {
     this.appenderSupplier = appenderSupplier;
   }
 
-  public static AtomixLogStorage ofPartition(final ZeebeIndexMapping zeebeIndexMapping, final RaftPartition partition) {
+  public static AtomixLogStorage ofPartition(
+      final ZeebeIndexMapping zeebeIndexMapping, final RaftPartition partition) {
     final var server = new AtomixRaftServer(partition.getServer());
     return new AtomixLogStorage(zeebeIndexMapping, server, server, server);
   }

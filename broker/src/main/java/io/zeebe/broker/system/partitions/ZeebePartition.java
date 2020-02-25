@@ -305,7 +305,8 @@ public final class ZeebePartition extends Actor
 
   private SnapshotStorage createSnapshotStorage() {
     final var reader =
-        new AtomixLogStorageReader(zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
+        new AtomixLogStorageReader(
+            zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
     return new AtomixSnapshotStorage(
         runtimeDirectory,

@@ -19,7 +19,8 @@ public final class AtomixLogStorageReader implements LogStorageReader {
   private final RaftLogReader reader;
   private final ZeebeIndexMapping zeebeIndexMapping;
 
-  public AtomixLogStorageReader(final ZeebeIndexMapping zeebeIndexMapping, final RaftLogReader reader) {
+  public AtomixLogStorageReader(
+      final ZeebeIndexMapping zeebeIndexMapping, final RaftLogReader reader) {
     this.reader = reader;
     this.zeebeIndexMapping = zeebeIndexMapping;
   }

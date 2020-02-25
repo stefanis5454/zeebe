@@ -147,11 +147,15 @@ public final class AtomixLogStorageRule extends ExternalResource
     }
 
     final var zeebeIndexBridge = new ZeebeIndexBridge();
-    raftStorage = builder.apply(buildDefaultStorage())
-        .withDirectory(directory)
-        .withJournalIndexFactory(() -> {
-          return zeebeIndexBridge;
-        }).build();
+    raftStorage =
+        builder
+            .apply(buildDefaultStorage())
+            .withDirectory(directory)
+            .withJournalIndexFactory(
+                () -> {
+                  return zeebeIndexBridge;
+                })
+            .build();
     raftLog = raftStorage.openLog();
     snapshotStore = raftStorage.getSnapshotStore();
     metaStore = raftStorage.openMetaStore();

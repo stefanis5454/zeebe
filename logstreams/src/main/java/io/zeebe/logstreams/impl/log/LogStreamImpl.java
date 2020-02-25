@@ -185,7 +185,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
           logStorage.delete(blockAddress);
           final long endDelete = System.currentTimeMillis();
           LOG.info("Deletion up to {} took {} ms", blockAddress, endDelete - startDelete);
-
         });
   }
 
@@ -203,8 +202,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(
         () -> {
-          final LogStreamReaderImpl reader =
-              new LogStreamReaderImpl(logStorage);
+          final LogStreamReaderImpl reader = new LogStreamReaderImpl(logStorage);
           readers.add(reader);
           return reader;
         });
@@ -350,8 +348,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   }
 
   private int determineInitialPartitionId() {
-    try (final LogStreamReaderImpl logReader =
-        new LogStreamReaderImpl(logStorage)) {
+    try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();
