@@ -17,21 +17,25 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
+  private static final int DENSITY = 100;
+
   private final ConcurrentNavigableMap<Long, Long> positionIndexMapping =
+      new ConcurrentSkipListMap<>();
+  private final ConcurrentNavigableMap<Long, Long> indexPositionMapping =
       new ConcurrentSkipListMap<>();
   // atomix positions
   private final ConcurrentNavigableMap<Long, Integer> positions = new ConcurrentSkipListMap<>();
-  private final int density = 1000;
 
   @Override
   public void index(final Indexed indexedEntry, final int position) {
     final var index = indexedEntry.index();
-    if (indexedEntry.type() == ZeebeEntry.class) {
-      final ZeebeEntry zeebeEntry = (ZeebeEntry) indexedEntry.entry();
-      positionIndexMapping.put(zeebeEntry.lowestPosition(), index);
-    }
-
-    if (index % density == 0) {
+    if (index % DENSITY == 0) {
+      if (indexedEntry.type() == ZeebeEntry.class) {
+        final ZeebeEntry zeebeEntry = (ZeebeEntry) indexedEntry.entry();
+        final var lowestPosition = zeebeEntry.lowestPosition();
+        positionIndexMapping.put(lowestPosition, index);
+        indexPositionMapping.put(index, lowestPosition);
+      }
       positions.put(index, position);
     }
   }
@@ -64,6 +68,14 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
   @Override
   public void truncate(final long index) {
+    final var lowerEntry = indexPositionMapping.lowerEntry(index);
+
+    final var lowerIndex = lowerEntry.getKey();
+    final var lowerPosition = lowerEntry.getValue();
+
+    indexPositionMapping.tailMap(lowerIndex).clear();
+    positionIndexMapping.tailMap(lowerPosition).clear();
+
     // clean up map
     //
     //      final var positionToIndexMapping = getPositionToIndexMapping();
@@ -78,6 +90,6 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
     //      }
 
     //    sparseJournalIndex.truncate(index);
-    //    positions.tailMap(index, false).clear();
+    positions.tailMap(index, false).clear();
   }
 }
