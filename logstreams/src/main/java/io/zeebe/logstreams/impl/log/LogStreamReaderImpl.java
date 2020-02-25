@@ -16,12 +16,14 @@ import java.util.NoSuchElementException;
 import java.util.function.LongUnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public final class LogStreamReaderImpl implements LogStreamReader {
 
   static final String ERROR_CLOSED = "Iterator is closed";
   private static final long FIRST_POSITION = Long.MIN_VALUE;
   private static final int UNINITIALIZED = -1;
+  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private LogStorageReader storageReader;
 
@@ -69,11 +71,12 @@ public final class LogStreamReaderImpl implements LogStreamReader {
     }
 
     final long seekAddress = storageReader.lookUpApproximateAddress(position);
+    LOG.info("Found for position {} corresponding index {}", position, seekAddress);
 
     final long startTime = System.currentTimeMillis();
     invalidateBufferAndOffsets();
     final long endTime = System.currentTimeMillis();
-    Loggers.LOGSTREAMS_LOGGER.info("Invalidate buffer took: {} ms", endTime - startTime);
+    LOG.info("Invalidate buffer took: {} ms", endTime - startTime);
 
     final long startSeek = System.currentTimeMillis();
     final var found = seekFrom(seekAddress, position);

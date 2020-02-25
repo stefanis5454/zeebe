@@ -4,14 +4,16 @@ import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.journal.index.Position;
-import io.atomix.storage.journal.index.SparseJournalIndex;
+import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
-  private final SparseJournalIndex sparseJournalIndex = new SparseJournalIndex(1000);
   private final ConcurrentNavigableMap<Long, Long> positionIndexMapping = new ConcurrentSkipListMap<>();
+  // atomix positions
+  private final ConcurrentNavigableMap<Long, Integer> positions = new ConcurrentSkipListMap<>();
+  private final int density = 1000;
 
   @Override
   public void index(final Indexed indexedEntry, final int position) {
@@ -22,7 +24,9 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
       positionIndexMapping.put(zeebeEntry.lowestPosition(), index);
     }
 
-    sparseJournalIndex.index(indexedEntry, position);
+    if (index % density == 0) {
+      positions.put(index, position);
+    }
   }
 
   @Override
@@ -47,7 +51,8 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 
   @Override
   public Position lookup(final long index) {
-    return sparseJournalIndex.lookup(index);
+    final Map.Entry<Long, Integer> entry = positions.floorEntry(index);
+    return entry != null ? new Position(entry.getKey(), entry.getValue()) : null;
   }
 
   @Override
@@ -65,6 +70,8 @@ public final class ZeebeIndexBridge implements JournalIndex, ZeebeIndexMapping {
 //        positionToIndexMappingRef.set(newPositionToIndexMap);
 //      }
 
-    sparseJournalIndex.truncate(index);
+
+//    sparseJournalIndex.truncate(index);
+    //    positions.tailMap(index, false).clear();
   }
 }
