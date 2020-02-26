@@ -11,12 +11,13 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
-/** Abstracts away messaging to other members of a given Raft - add operations as needed. */
-public interface RaftMessagingService {
+/** Abstracts away messaging to other members of a partition - add operations as needed. */
+public interface PartitionMessagingService {
 
   /**
-   * Subscribes to a given subject - if another Raft member sends a message on this topic, the
-   * consumer will be notified with the given payload. Each call is considered a new subscription.
+   * Subscribes to a given subject - if another member of the partition sends a message on this
+   * topic, the consumer will be notified with the given payload. Each call is considered a new
+   * subscription.
    *
    * @param subject the subject to subscribe to
    * @param consumer the consumer which handles the payload
@@ -26,8 +27,8 @@ public interface RaftMessagingService {
       final String subject, final Consumer<ByteBuffer> consumer, final Executor executor);
 
   /**
-   * Broadcasts the given payload to all other members of the Raft; should log if a member is not
-   * subscribed to a given topic, but not fail.
+   * Broadcasts the given payload to all other members of the partition; should log if a member is
+   * not subscribed to a given topic, but not fail.
    *
    * @param subject the subject on which to broadcast the payload
    * @param payload the payload to send

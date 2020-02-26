@@ -10,7 +10,7 @@ package io.zeebe.broker.engine.impl;
 import static io.zeebe.util.sched.Actor.buildActorName;
 
 import io.atomix.cluster.messaging.Subscription;
-import io.zeebe.broker.system.partitions.RaftMessagingService;
+import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.engine.Loggers;
 import io.zeebe.logstreams.state.SnapshotChunk;
 import io.zeebe.logstreams.state.SnapshotReplication;
@@ -31,14 +31,14 @@ public final class StateReplication implements SnapshotReplication {
   private final String replicationTopic;
 
   private final DirectBuffer readBuffer = new UnsafeBuffer(0, 0);
-  private final RaftMessagingService messagingService;
+  private final PartitionMessagingService messagingService;
   private final String threadName;
 
   private ExecutorService executorService;
   private Subscription subscription;
 
   public StateReplication(
-      final RaftMessagingService messagingService, final int partitionId, final int nodeId) {
+      final PartitionMessagingService messagingService, final int partitionId, final int nodeId) {
     this.messagingService = messagingService;
     this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
     this.threadName = buildActorName(nodeId, "StateReplication-" + partitionId);

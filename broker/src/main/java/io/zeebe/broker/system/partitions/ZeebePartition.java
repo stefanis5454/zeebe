@@ -69,7 +69,7 @@ public final class ZeebePartition extends Actor
   private static final int EXPORTER_PROCESSOR_ID = 1003;
   private static final String EXPORTER_NAME = "Exporter-%d";
 
-  private final RaftMessagingService messagingService;
+  private final PartitionMessagingService messagingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition atomixRaftPartition;
   private final ExporterRepository exporterRepository = new ExporterRepository();
@@ -98,7 +98,7 @@ public final class ZeebePartition extends Actor
       final BrokerInfo localBroker,
       final RaftPartition atomixRaftPartition,
       final List<PartitionListener> partitionListeners,
-      final RaftMessagingService messagingService,
+      final PartitionMessagingService messagingService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
