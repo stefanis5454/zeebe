@@ -17,6 +17,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -79,7 +80,7 @@ public class UpgradeTest {
                 .done()
           },
           {
-            "message",
+            "message subscription",
             scenario()
                 .deployWorkflow(msgWorkflow())
                 .createInstance()
@@ -110,6 +111,15 @@ public class UpgradeTest {
                 .createInstance()
                 .beforeUpgrade(UpgradeTest::createIncident)
                 .afterUpgrade(UpgradeTest::resolveIncident)
+                .done()
+          },
+          {
+            "publish message",
+            scenario()
+                .deployWorkflow(msgWorkflow())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::messageSubscription)
+                .afterUpgrade(UpgradeTest::publishMessage)
                 .done()
           }
         });
@@ -201,7 +211,14 @@ public class UpgradeTest {
 
   private static void publishMessage(
       final ContainerStateRule state, final long wfInstanceKey, final long key) {
-    state.client().newPublishMessageCommand().messageName(MSG).correlationKey("123").send().join();
+    state
+        .client()
+        .newPublishMessageCommand()
+        .messageName(MSG)
+        .correlationKey("123")
+        .timeToLive(Duration.ofMinutes(5))
+        .send()
+        .join();
 
     TestUtil.waitUntil(() -> state.hasMessageInState(MSG, "PUBLISHED"));
   }
