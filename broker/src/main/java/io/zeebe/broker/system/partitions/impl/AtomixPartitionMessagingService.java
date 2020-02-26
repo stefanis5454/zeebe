@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.partitions.impl;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.zeebe.broker.system.partitions.PartitionMessagingService;
@@ -15,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -43,9 +45,7 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
   @Override
   public void broadcast(final String subject, final ByteBuffer payload) {
     final var reachableMembers =
-        otherMembers.stream()
-            .filter(m -> clusterMembershipService.getMember(m).isReachable())
-            .collect(Collectors.toUnmodifiableSet());
+        otherMembers.stream().filter(this::isReachable).collect(Collectors.toUnmodifiableSet());
 
     communicationService.multicast(subject, payload, reachableMembers);
   }
@@ -62,5 +62,11 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
     eligibleMembers.remove(localMemberId);
 
     return Collections.unmodifiableSet(eligibleMembers);
+  }
+
+  private boolean isReachable(final MemberId memberId) {
+    return Optional.ofNullable(clusterMembershipService.getMember(memberId))
+        .map(Member::isReachable)
+        .orElse(false);
   }
 }
