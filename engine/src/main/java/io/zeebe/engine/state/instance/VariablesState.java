@@ -238,7 +238,9 @@ public class VariablesState {
    * it looks in the parent scope and continues until it is found.
    *
    * @param scopeKey the key of the variable scope to start from
-   * @param name the name of the variable
+   * @param name the buffer that contains the name of the variable
+   * @param nameOffset the offset of name in the buffer
+   * @param nameLength the length of the name in the buffer
    * @return the value of the variable, or {@code null} if it is not present in the variable scope
    */
   public DirectBuffer getVariable(
