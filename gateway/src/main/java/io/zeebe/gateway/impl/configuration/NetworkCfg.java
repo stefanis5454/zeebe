@@ -12,9 +12,9 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_KEEP_ALIVE_INTERVAL;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -68,8 +68,8 @@ public final class NetworkCfg {
     return this;
   }
 
-  public SocketAddress toSocketAddress() {
-    return new SocketAddress(host, port);
+  public InetSocketAddress toSocketAddress() {
+    return new InetSocketAddress(host, port);
   }
 
   @Override
