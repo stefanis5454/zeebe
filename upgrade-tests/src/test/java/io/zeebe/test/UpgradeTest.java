@@ -15,6 +15,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.UpgradeTestCase.TestCaseBuilder;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
+import io.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -39,6 +40,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class UpgradeTest {
 
   public static final String PROCESS_ID = "process";
+  public static final String CHILD_PROCESS_ID = "childProc";
   private static final String CURRENT_VERSION = "current-test";
   private static final String TASK = "task";
   private static final String MSG = "msg";
@@ -120,6 +122,25 @@ public class UpgradeTest {
                 .createInstance()
                 .beforeUpgrade(UpgradeTest::messageSubscription)
                 .afterUpgrade(UpgradeTest::publishMessage)
+                .done()
+          },
+          {
+            "call activity",
+            scenario()
+                .deployWorkflow(
+                    new Tuple<>(parentWorkflow(), PROCESS_ID),
+                    new Tuple<>(childWorkflow(), CHILD_PROCESS_ID))
+                .afterUpgrade(
+                    (state, wfKey, key) ->
+                        state
+                            .client()
+                            .newCreateInstanceCommand()
+                            .bpmnProcessId(UpgradeTest.PROCESS_ID)
+                            .latestVersion()
+                            .variables(Map.of("key", "123"))
+                            .send()
+                            .join()
+                            .getWorkflowInstanceKey())
                 .done()
           }
         });
@@ -279,6 +300,18 @@ public class UpgradeTest {
     final ActivateJobsResponse job =
         state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
     state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
+  }
+
+  private static BpmnModelInstance parentWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .callActivity("c", b -> b.zeebeProcessId(CHILD_PROCESS_ID))
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance childWorkflow() {
+    return Bpmn.createExecutableProcess(CHILD_PROCESS_ID).startEvent().endEvent().done();
   }
 
   private static TestCaseBuilder scenario() {
